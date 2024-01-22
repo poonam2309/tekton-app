@@ -1,0 +1,27 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: build-api-pipelinerun
+spec:
+  pipelineRef:
+    name: build-and-deploy
+  params:
+  - name: deployment-name
+    value: vote-api
+  - name: git-url
+    value: https://github.com/poonamkadian/Tekton-argocd.git
+  - name: IMAGE
+    value: quay.io/pkjoon/microservices:1.0
+  - name: DOCKERFILE
+    value: vote-api/Dockerfile
+  - name: manifest_dir
+    value: vote-api
+  workspaces:
+  - name: shared-workspace
+    volumeClaimTemplate:
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 500Mi
