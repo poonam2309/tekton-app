@@ -1,68 +1,68 @@
-apiVersion: tekton.dev/v1beta1
+apiVersion: tekton.dev/v1
 kind: Pipeline
 metadata:
-  name: build-and-deploy
+  creationTimestamp: '2024-01-23T12:42:33Z'
+  generation: 4
+  name: build-and-push
+  namespace: tekton-demo
 spec:
-  workspaces:
-  - name: shared-workspace
   params:
-  - name: deployment-name
-    type: string
-    description: name of the deployment to be patched
-  - name: git-url
-    type: string
-    description: url of the git repo for the code of deployment
-  - name: git-revision
-    type: string
-    description: revision to be used from repo of the code for deployment
-    default: master
-  - name: IMAGE
-    type: string
-    description: image to be build from the code
+    - description: name of the deployment to be patched
+      name: deployment-name
+      type: string
+    - description: url of the git repo for the code of deployment
+      name: git-url
+      type: string
+    - default: master
+      description: revision to be used from repo of the code for deployment
+      name: git-revision
+      type: string
+    - description: image to be build from the code
+      name: IMAGE
+      type: string
+    - description: image to be build from the code
+      name: DOCKERFILE
+      type: string
+    - description: The directory in source that contains yaml manifests
+      name: manifest_dir
+      type: string
+    - description: image to be build from the code
+      name: IMAGE_TAG
+      type: string
   tasks:
-  - name: fetch-repository
-    taskRef:
-      name: git-clone
-      kind: ClusterTask
-    workspaces:
-    - name: output
-      workspace: shared-workspace
-    params:
-    - name: url
-      value: $(params.git-url)
-    - name: subdirectory
-      value: ""
-    - name: deleteExisting
-      value: "true"
-    - name: revision
-      value: $(params.git-revision)
-  - name: build-image
-    taskRef:
-      name: buildah
-      kind: ClusterTask
-    params:
-    - name: IMAGE
-      value: $(params.IMAGE)
-    workspaces:
-    - name: source
-      workspace: shared-workspace
-    runAfter:
-    - fetch-repository
-  - name: apply-manifests
-    taskRef:
-      name: apply-manifests
-    workspaces:
-    - name: source
-      workspace: shared-workspace
-    runAfter:
-    - build-image
-  - name: update-deployment
-    taskRef:
-      name: update-deployment
-    params:
-    - name: deployment
-      value: $(params.deployment-name)
-    - name: IMAGE
-      value: $(params.IMAGE)
-    runAfter:
-    - apply-manifests
+    - name: fetch-repository
+      params:
+        - name: url
+          value: $(params.git-url)
+        - name: subdirectory
+          value: ''
+        - name: deleteExisting
+          value: 'true'
+        - name: revision
+          value: $(params.git-revision)
+      taskRef:
+        kind: Task
+        name: git-clone
+      workspaces:
+        - name: output
+          workspace: shared-workspace
+    - name: build-image
+      params:
+        - name: IMAGE
+          value: $(params.IMAGE)
+        - name: DOCKERFILE
+          value: $(params.DOCKERFILE)
+        - name: manifest_dir
+          value: $(params.manifest_dir)
+        - name: IMAGE_TAG
+          value: $(params.IMAGE_TAG)
+      runAfter:
+        - fetch-repository
+      taskRef:
+        kind: Task
+        name: buildimage
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+  workspaces:
+    - name: shared-workspace
